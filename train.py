@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# __author__="Danqing Wang"
+# __author__="Yuqi Zhou"
 
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,6 @@ from module.dataloader import ExampleSet, MultiExampleSet, graph_collate_fn
 from module.embedding import Word_Embedding
 from module.vocabulary import Vocab
 from tools.logger import *
-from my_else import MyLogger  # ------------------------------------ 我自己加的
 
 _DEBUG_FLAG_ = False
 
@@ -388,11 +387,10 @@ def main():
         logger.error("[ERROR] Invalid Model Type!")
         raise NotImplementedError("Model Type has not been implemented")
 
-    if args.cuda:  # 默认为否
+    if args.cuda:
         model.to(torch.device("cuda:0"))
         logger.info("[INFO] Use cuda")
 
-    # 传入参数
     setup_training(model, train_loader, valid_loader, valid_dataset, hps)
 
 
