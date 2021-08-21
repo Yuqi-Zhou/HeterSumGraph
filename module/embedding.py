@@ -35,6 +35,7 @@ class Word_Embedding(object):
         """Load word embedding"""
         word_vecs = {}
         with open(self._path, encoding="utf-8") as f:
+            count = 0
             lines = f.readlines()[1:]
             for line in lines:
                 values = line.split(" ")
