@@ -23,31 +23,19 @@ import re
 import os
 from nltk.corpus import stopwords
 
-import glob
-import copy
-import random
 import time
 import json
-import pickle
-import nltk
-import collections
 from collections import Counter
-from itertools import combinations
 import numpy as np
-from random import shuffle
+
 
 import torch
 import torch.utils.data
-import torch.nn.functional as F
 
 from tools.logger import *
-
-import dgl
 from dgl.data.utils import save_graphs, load_graphs
+import jsonlines
 
-from my_else import print_variable_info, my_stop, my_dividing_line  # ----------------------------------- 我自己加的
-import jsonlines  # ----------------------------------- 我自己加的
-from platform import platform  # ----------------------------------- 我自己加的
 
 
 # FILTERWORD = stopwords.words('english')
@@ -59,7 +47,7 @@ from platform import platform  # ----------------------------------- 我自己�
 ######################################### Example #########################################
 
 
-class Example(object):  # 本类仅用于 ExampleSet 类的方法 get_example 中
+class Example(object):
     """Class representing a train/val/test example for single-document extractive summarization."""
 
     def __init__(self, article_sents, abstract_sents, vocab, sent_max_len, label):
@@ -180,7 +168,7 @@ class ExampleSet(torch.utils.data.Dataset):
 
         FILTERWORD = []
         if language.lower() == 'chinese':
-            chinese_stopwords_path = os.getcwd() + r'''/aa_stopwords/hit_stopwords.txt'''
+            chinese_stopwords_path = os.getcwd() + r'''/stopwords/hit_stopwords.txt'''
             with open(chinese_stopwords_path, mode='r', encoding='utf-8') as f_stop:
                 for line in f_stop:
                     FILTERWORD.append(line.strip())
