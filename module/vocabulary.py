@@ -37,7 +37,6 @@ class Vocab(object):
         :param vocab_file: string; path to the vocab file, which is assumed to contain "<word> <frequency>" on each line, sorted with most frequent word first. This code doesn't actually use the frequencies, though.
         :param max_size: int; The maximum size of the resulting Vocabulary.
         """
-        describe_str = './module/vacabulary, 类 Vocab 初始化: '
         self._word_to_id = {}
         self._id_to_word = {}
         self._count = 0 # keeps track of total number of words in the Vocab
@@ -58,17 +57,17 @@ class Vocab(object):
                 w = pieces[0]
                 # print(w)
                 if w in [UNKNOWN_TOKEN, PAD_TOKEN, START_DECODING, STOP_DECODING]:
-                    raise Exception(describe_str + '[UNK], [PAD], [START] and [STOP] shouldn\'t be in the vocab file, but %s is' % w)
+                    raise Exception('[UNK], [PAD], [START] and [STOP] shouldn\'t be in the vocab file, but %s is' % w)
                 if w in self._word_to_id:
-                    logger.error(describe_str + 'Duplicated word in vocabulary file Line %d : %s' % (cnt, w))
+                    logger.error('Duplicated word in vocabulary file Line %d : %s' % (cnt, w))
                     continue
                 self._word_to_id[w] = self._count
                 self._id_to_word[self._count] = w
                 self._count += 1
                 if max_size != 0 and self._count >= max_size:
-                    logger.info(describe_str + "[INFO] max_size of vocab was specified as %i; we now have %i words. Stopping reading." % (max_size, self._count))
+                    logger.info("[INFO] max_size of vocab was specified as %i; we now have %i words. Stopping reading." % (max_size, self._count))
                     break
-        logger.info(describe_str + "[INFO] Finished constructing vocabulary of %i total words. Last word added: %s", self._count, self._id_to_word[self._count-1])
+        logger.info("[INFO] Finished constructing vocabulary of %i total words. Last word added: %s", self._count, self._id_to_word[self._count-1])
 
     def word2id(self, word):
         """Returns the id (integer) of a word (string). Returns [UNK] id if word is OOV."""
