@@ -87,11 +87,8 @@ def run_training(model, train_loader, valid_loader, valset, hps, train_dir):
     '''
 
     logger.info("[INFO] Starting run_training")
-
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=hps.lr)
-
     criterion = torch.nn.CrossEntropyLoss(reduction='none')
-
     best_train_loss = None
     best_loss = None
     best_F = None
@@ -102,8 +99,10 @@ def run_training(model, train_loader, valid_loader, valset, hps, train_dir):
         epoch_loss = 0.0
         train_loss = 0.0
         epoch_start_time = time.time()
+
         for i, (G, index) in enumerate(train_loader):
             iter_start_time = time.time()
+
             model.train()
 
             if hps.cuda:
@@ -116,7 +115,6 @@ def run_training(model, train_loader, valid_loader, valset, hps, train_dir):
             G.nodes[snode_id].data["loss"] = criterion(outputs, label).unsqueeze(-1)
             loss = dgl.sum_nodes(G, "loss")
             loss = loss.mean()
-
             if not (np.isfinite(loss.data.cpu())).numpy():
                 logger.error("train Loss is not finite. Stopping.")
                 logger.info('loss: ' + str(loss))
@@ -127,6 +125,7 @@ def run_training(model, train_loader, valid_loader, valset, hps, train_dir):
                 raise Exception("train Loss is not finite. Stopping.")
 
             optimizer.zero_grad()
+
             loss.backward()
             if hps.grad_clip:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), hps.max_grad_norm)
@@ -135,7 +134,6 @@ def run_training(model, train_loader, valid_loader, valset, hps, train_dir):
 
             train_loss += float(loss.data)
             epoch_loss += float(loss.data)
-
             if i % 100 == 0:
                 if _DEBUG_FLAG_:
                     for name, param in model.named_parameters():
@@ -171,8 +169,8 @@ def run_training(model, train_loader, valid_loader, valset, hps, train_dir):
         best_loss, best_F, non_descent_cnt, saveNo = run_eval(model, valid_loader, valset, hps, best_loss, best_F,
                                                               non_descent_cnt, saveNo)
 
-        if non_descent_cnt >= 3:
-            logger.error("[Error] val loss does not descent for three times. Stopping supervisor...")
+        if non_descent_cnt >= 6:
+            logger.error("[Error] val loss does not descent for six times. Stopping supervisor...")
             save_model(model, os.path.join(train_dir, "earlystop"))
             return
 
@@ -262,9 +260,9 @@ def main():
     parser = argparse.ArgumentParser(description='HeterSumGraph Model')
 
     # Where to find data
-    parser.add_argument('--data_dir', type=str, default='./aa_data_datasets/cles_word_chinese',help='The dataset directory.')
-    parser.add_argument('--cache_dir', type=str, default='./aa_data_graphfile/cache/CLES_word_chinese',help='The processed dataset directory')
-    parser.add_argument('--embedding_path', type=str, default='./aa_word_vector_file/chinese_merge_SGNS/word+chr+Ngram____merge_sgns_bigram_char300.txt', help=' Path expression to external word embedding.')
+    parser.add_argument('--data_dir', type=str, default='data/CLES_word_chinese',help='The dataset directory.')
+    parser.add_argument('--cache_dir', type=str, default='cache/CLES_word_chinese',help='The processed dataset directory')
+    parser.add_argument('--embedding_path', type=str, default='word_vector_file/chinese_merge_SGNS/word+chr+Ngram____merge_sgns_bigram_char300.txt', help=' Path expression to external word embedding.')
 
     #Interstingpeparamter
     parser.add_argument('--use_interest', action='store_true', default=False, help='whether to use Interest Graph')
@@ -273,28 +271,28 @@ def main():
     parser.add_argument('--language', type=str, default='chinese', help='The chinese stopwords file')
 
     # Important settings
-    parser.add_argument('--model', type=str, default='HSG', help='模型结构 model structure[HSG|HDSG]')
+    parser.add_argument('--model', type=str, default='HSG', help='model structure[HSG|HDSG]')
     parser.add_argument('--restore_model', type=str, default='None', help='Restore model for further training. [bestmodel/bestFmodel/earlystop/None]')
 
     # Where to save output
-    parser.add_argument('--save_root', type=str, default='./HSG+cles+ig/bb_save', help='用来保存数据的根目录 Root directory for all model.')
-    parser.add_argument('--log_root', type=str, default='./HSG+cles+ig/bb_log', help='用来保存日志的根目录 Root directory for all logging.')
+    parser.add_argument('--save_root', type=str, default='models\HSG_cles', help='Root directory for all model.')
+    parser.add_argument('--log_root', type=str, default='logs/HSG_cles', help='Root directory for all logging.')
 
     # Hyperparameters
     parser.add_argument('--gpu', type=str, default='0', help='GPU ID to use. [default: 0]')
     parser.add_argument('--cuda', action='store_true', default=True, help='GPU or CPU [default: False]')
     parser.add_argument('--vocab_size', type=int, default=50000, help='Size of vocabulary. [default: 50000]')
     parser.add_argument('--n_epochs', type=int, default=20, help='Number of epochs [default: 20]')
-    parser.add_argument('--batch_size', type=int, default=32, help='Mini batch size [default: 32]')
+    parser.add_argument('--batch_size', type=int, default=256, help='Mini batch size [default: 256]')
     parser.add_argument('--n_iter', type=int, default=1, help='iteration hop [default: 1]')
 
-    parser.add_argument('--word_embedding', action='store_true', default=True, help='是否使用外部词向量 whether to use Word embedding [default: True]')
-    parser.add_argument('--word_emb_dim', type=int, default=300, help='一个词的词向量长度 Word embedding size [default: 300]')
-    parser.add_argument('--embed_train', action='store_true', default=False, help='是否训练词向量 whether to train Word embedding [default: False]')
+    parser.add_argument('--word_embedding', action='store_true', default=True, help='whether to use Word embedding [default: True]')
+    parser.add_argument('--word_emb_dim', type=int, default=300, help='Word embedding size [default: 300]')
+    parser.add_argument('--embed_train', action='store_true', default=False, help='whether to train Word embedding [default: False]')
     parser.add_argument('--feat_embed_size', type=int, default=50, help='feature embedding size [default: 50]')
-    parser.add_argument('--n_layers', type=int, default=1, help='GAT 层的数量 Number of GAT layers [default: 1]')
+    parser.add_argument('--n_layers', type=int, default=1, help='GAT Number of GAT layers [default: 1]')
     parser.add_argument('--lstm_hidden_state', type=int, default=128, help='size of lstm hidden state [default: 128]')
-    parser.add_argument('--lstm_layers', type=int, default=2, help='lstm 层的数量 Number of lstm layers [default: 2]')
+    parser.add_argument('--lstm_layers', type=int, default=2, help='lstm Number of lstm layers [default: 2]')
     parser.add_argument('--bidirectional', action='store_true', default=True, help='whether to use bidirectional LSTM [default: True]')
     parser.add_argument('--n_feature_size', type=int, default=128, help='size of node feature [default: 128]')
     parser.add_argument('--hidden_size', type=int, default=64, help='hidden size [default: 64]')
@@ -304,16 +302,16 @@ def main():
     parser.add_argument('--atten_dropout_prob', type=float, default=0.1, help='attention dropout prob [default: 0.1]')
     parser.add_argument('--ffn_dropout_prob', type=float, default=0.1, help='PositionwiseFeedForward dropout prob [default: 0.1]')
     parser.add_argument('--use_orthnormal_init', action='store_true', default=True, help='use orthnormal init for lstm [default: True]')
-    parser.add_argument('--sent_max_len', type=int, default=100, help='一个句子的最大令牌数 max length of sentences (max source text sentence tokens)')
-    parser.add_argument('--doc_max_timesteps', type=int, default=50, help='一篇文档的最大句子数 max length of documents (max timesteps of documents)')
+    parser.add_argument('--sent_max_len', type=int, default=100, help='max length of sentences (max source text sentence tokens)')
+    parser.add_argument('--doc_max_timesteps', type=int, default=50, help='max length of documents (max timesteps of documents)')
 
     # Training
     parser.add_argument('--lr', type=float, default=0.0005, help='learning rate')
-    parser.add_argument('--lr_descent', action='store_true', default=False, help='是否要学习率下降 learning rate descent')
-    parser.add_argument('--grad_clip', action='store_true', default=False, help='梯度裁剪 for gradient clipping')
+    parser.add_argument('--lr_descent', action='store_true', default=False, help='learning rate descent')
+    parser.add_argument('--grad_clip', action='store_true', default=False, help='for gradient clipping')
     parser.add_argument('--max_grad_norm', type=float, default=1.0, help='for gradient clipping max gradient normalization')
 
-    parser.add_argument('-m', type=int, default=3, help='抽取的摘要的句数 decode summary length')
+    parser.add_argument('-m', type=int, default=3, help='decode summary length')
 
     args = parser.parse_args()
 
@@ -390,7 +388,6 @@ def main():
     if args.cuda:
         model.to(torch.device("cuda:0"))
         logger.info("[INFO] Use cuda")
-
     setup_training(model, train_loader, valid_loader, valid_dataset, hps)
 
 
