@@ -25,6 +25,7 @@ import shutil
 import time
 
 import dgl
+from dgl.data.utils import save_graphs
 import numpy as np
 import torch
 from rouge import Rouge
@@ -106,7 +107,7 @@ def run_training(model, train_loader, valid_loader, valset, hps, train_dir):
             model.train()
 
             if hps.cuda:
-                G.to(torch.device("cuda"))
+                G = G.to(torch.device("cuda"))
 
             outputs = model.forward(G)  # [n_snodes, 2]
 
@@ -200,7 +201,7 @@ def run_eval(model, loader, valset, hps, best_loss, best_F, non_descent_cnt, sav
         tester = SLTester(model, hps.m)
         for i, (G, index) in enumerate(loader):
             if hps.cuda:
-                G.to(torch.device("cuda"))
+                G = G.to(torch.device("cuda"))
             tester.evaluation(G, index, valset)
 
     running_avg_loss = tester.running_avg_loss
@@ -270,6 +271,12 @@ def main():
     parser.add_argument('--pyrouge_temp_dir', type=str, default='./HSG+cles+ig/bb_pyrouge_temp', help='The file to calculate score')
     parser.add_argument('--language', type=str, default='chinese', help='The chinese stopwords file')
 
+    # Attention
+    parser.add_argument('--attention', action='store_true', default=False, help='whether to use attention')
+
+    # numworkers
+    parser.add_argument('--num_workers', type=int, default=1, help='num of dataloader. [default: 1]')
+
     # Important settings
     parser.add_argument('--model', type=str, default='HSG', help='model structure[HSG|HDSG]')
     parser.add_argument('--restore_model', type=str, default='None', help='Restore model for further training. [bestmodel/bestFmodel/earlystop/None]')
@@ -283,7 +290,7 @@ def main():
     parser.add_argument('--cuda', action='store_true', default=True, help='GPU or CPU [default: False]')
     parser.add_argument('--vocab_size', type=int, default=50000, help='Size of vocabulary. [default: 50000]')
     parser.add_argument('--n_epochs', type=int, default=20, help='Number of epochs [default: 20]')
-    parser.add_argument('--batch_size', type=int, default=256, help='Mini batch size [default: 256]')
+    parser.add_argument('--batch_size', type=int, default=1, help='Mini batch size [default: 32]')
     parser.add_argument('--n_iter', type=int, default=1, help='iteration hop [default: 1]')
 
     parser.add_argument('--word_embedding', action='store_true', default=True, help='whether to use Word embedding [default: True]')
@@ -360,12 +367,15 @@ def main():
         dataset = ExampleSet(DATA_FILE, vocab, hps.doc_max_timesteps, hps.sent_max_len, FILTER_WORD, train_w2s_path,
                              args.use_interest, train_interest_path, hps.language)
         train_loader = torch.utils.data.DataLoader(dataset, batch_size=hps.batch_size, shuffle=True,
-                                                    num_workers=1, collate_fn=graph_collate_fn)
+                                                    num_workers=hps.num_workers, collate_fn=graph_collate_fn)
         del dataset
         valid_dataset = ExampleSet(VALID_FILE, vocab, hps.doc_max_timesteps, hps.sent_max_len, FILTER_WORD,
                                    val_w2s_path, args.use_interest, val_interest_path, hps.language)
         valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=hps.batch_size, shuffle=False,
-                                                   collate_fn=graph_collate_fn, num_workers=1)
+                                                collate_fn=graph_collate_fn, num_workers=hps.num_workers)
+        for G,i in valid_dataset:
+            save_graphs('Graph_data/cles/valid/'+str(i)+'.graph.bin', [G])
+        exit(0)
     elif hps.model == "HDSG":
         model = HSumDocGraph(hps, embed)
         logger.info("[MODEL] HeterDocSumGraph")
@@ -373,20 +383,22 @@ def main():
         dataset = MultiExampleSet(DATA_FILE, vocab, hps.doc_max_timesteps, hps.sent_max_len, FILTER_WORD,
                                   train_w2s_path, train_w2d_path)
         train_loader = torch.utils.data.DataLoader(dataset, batch_size=hps.batch_size, shuffle=True,
-                                                   num_workers=1, collate_fn=graph_collate_fn)
+                                                   num_workers=hps.num_workers, collate_fn=graph_collate_fn)
+
         del dataset
         val_w2d_path = os.path.join(args.cache_dir, "val.w2d.tfidf.jsonl")
         valid_dataset = MultiExampleSet(VALID_FILE, vocab, hps.doc_max_timesteps, hps.sent_max_len, FILTER_WORD,
                                         val_w2s_path, val_w2d_path)
         valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=hps.batch_size, shuffle=False,
                                                    collate_fn=graph_collate_fn,
-                                                   num_workers=1)  # Shuffle Must be False for ROUGE evaluation
+                                                   num_workers=hps.num_workers)  # Shuffle Must be False for ROUGE evaluation
     else:
         logger.error("[ERROR] Invalid Model Type!")
         raise NotImplementedError("Model Type has not been implemented")
 
     if args.cuda:
-        model.to(torch.device("cuda:0"))
+        # model.to(torch.device("cuda:0"))
+        model.to(torch.device("cuda"))
         logger.info("[INFO] Use cuda")
     setup_training(model, train_loader, valid_loader, valid_dataset, hps)
 

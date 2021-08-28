@@ -205,13 +205,13 @@ class MulHeadAttentionDecoder(nn.Module):
 
         # multi head attention
         # iw_attention, _ = self.IG_mulatt(winpute, iinpute, iinpute)               # [wnodes, 1, self.n_feature]
-        sw_attention, _ = self.HSG1_mulatt(winpute, sinpute, sinpute)             # [wnodes, 1, self.n_feature]
+        # sw_attention, _ = self.HSG1_mulatt(winpute, sinpute, sinpute)             # [wnodes, 1, self.n_feature]
         # s_attention, _  = self.HSG2_mulatt(sinpute, iw_attention, sw_attention) # [snodes, 1, self.n_feature]
-        # s_attention, _  = self.HSG2_mulatt(sinpute, iw_attention, sw_attention)   # [snodes, 1, self.n_feature]
+        s_attention, _  = self.HSG2_mulatt(sinpute, winpute, winpute)   # [snodes, 1, self.n_feature]
 
         # FFN + add + normalization
         # outputes = self.ffn(s_attention)
-        outputes = self.ffn(sw_attention)
+        outputes = self.ffn(s_attention)
         outputes = outputes.squeeze(1)     # [snodes, self.n_feature]
         return outputes
 

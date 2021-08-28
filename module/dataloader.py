@@ -37,7 +37,6 @@ from dgl.data.utils import save_graphs, load_graphs
 import jsonlines
 
 
-
 # FILTERWORD = stopwords.words('english')
 # punctuations = [',', '.', ':', ';', '?', '(', ')', '[', ']', '&', '!', '*', '@', '#', '$', '%', '\'\'', '\'', '`', '``',
 #                 '-', '--', '|', '\/']
@@ -156,6 +155,7 @@ class ExampleSet(torch.utils.data.Dataset):
         self.use_interest = use_interest
         self.interest_list = []
 
+
         logger.info("[INFO] Start reading %s", self.__class__.__name__)
         start = time.time()
         self.example_list = readJson(data_path)
@@ -184,7 +184,7 @@ class ExampleSet(torch.utils.data.Dataset):
                             '-', '--', '|', '\/']
             FILTERWORD.extend(punctuations)
 
-        self.filterwords = FILTERWORD  # 过滤词列表
+        self.filterwords = FILTERWORD
 
         self.filterids = [vocab.word2id(w.lower()) for w in FILTERWORD]
 
@@ -220,7 +220,7 @@ class ExampleSet(torch.utils.data.Dataset):
         N, m = label_m.shape
         if m < self.doc_max_timesteps:
             pad_m = np.zeros((N, self.doc_max_timesteps - m))
-            return np.hstack([label_m, pad_m])  # 水平填充矩阵
+            return np.hstack([label_m, pad_m])
         return label_m
 
     def AddWordNode(self, G, inputid):
@@ -261,6 +261,7 @@ class ExampleSet(torch.utils.data.Dataset):
             edge:
                 word2sent, sent2word:  tffrac=int, dtype=0
         """
+
         G = dgl.DGLGraph()
 
         wid2nid, nid2wid = self.AddWordNode(G, input_pad)
