@@ -192,7 +192,7 @@ class MulHeadAttentionDecoder(nn.Module):
         self.n_feature = hps.hidden_size
 
         self.wd2sd = torch.nn.Linear(hps.word_emb_dim, self.n_feature)
-        self.IG_mulatt   = torch.nn.MultiheadAttention(self.n_feature, num_heads=num_heads)
+        self.HSG3_mulatt = torch.nn.MultiheadAttention(self.n_feature, num_heads=num_heads)
         self.HSG1_mulatt = torch.nn.MultiheadAttention(self.n_feature, num_heads=num_heads)
         self.HSG2_mulatt = torch.nn.MultiheadAttention(self.n_feature, num_heads=num_heads)
 
@@ -209,6 +209,7 @@ class MulHeadAttentionDecoder(nn.Module):
         # s_attention, _  = self.HSG2_mulatt(sinpute, iw_attention, sw_attention) # [snodes, 1, self.n_feature]
         w_attention, _  = self.HSG2_mulatt(sinpute, winpute, winpute)   # [snodes, 1, self.n_feature]
         i_attention, _  = self.HSG1_mulatt(sinpute, iinpute, iinpute)   # [snodes, 1, self.n_feature]
+        s_attention, _  = self.HSG3_mulatt(sinpute, i_attention, w_attention) # [snodes, 1, self.n_feature]
         # FFN + add + normalization
         # outputes = self.ffn(s_attention)
 
@@ -217,5 +218,8 @@ class MulHeadAttentionDecoder(nn.Module):
 
         outputes2 = self.ffn(i_attention)
         outputes2 = outputes2.squeeze(1)     # [snodes, self.n_feature]
-        return outputes1, outputes2
+
+        outputes3 = self.ffn(s_attention)
+        outputes3 = outputes3.squeeze(1)     # [snodes, self.n_feature]
+        return outputes1, outputes2, outputes3
 
