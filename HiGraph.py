@@ -45,7 +45,7 @@ class HSumGraph(nn.Module):
 
         # sent node feature
         self._init_sn_param()
-        self._TFembed = nn.Embedding(10, hps.feat_embed_size)   # box=10  # feat_embed_size 默认为 50
+        self._TFembed = nn.Embedding(10, hps.feat_embed_size)   # box=10  # feat_embed_size
         self.n_feature_proj = nn.Linear(hps.n_feature_size * 2, hps.hidden_size, bias=False)
 
         # ig node feature
@@ -92,7 +92,7 @@ class HSumGraph(nn.Module):
         self.decoder = MulHeadAttentionDecoder(self._hps, self.n_feature)
 
         # sentence selector
-        self.wh = nn.Linear(self.n_feature * 2, 2)  # self.wh = nn.Linear(64, 2)
+        self.wh = nn.Linear(self.n_feature, 2)  # self.wh = nn.Linear(64, 2)
 
     def forward(self, graph):
         """
@@ -106,12 +106,13 @@ class HSumGraph(nn.Module):
         """
 
         # word node init
+
         word_feature = self.set_wnfeature(graph)    # [wnode, embed_size]
 
         sent_feature = self.n_feature_proj(self.set_snfeature(graph))    # [snode, n_feature_size]
 
         # the start state
-        word_state = word_feature  # [词节点数量, 300]
+        word_state = word_feature
 
         if self._hps.use_interest:
             igword_state = self.set_igwnfeature(graph)
@@ -127,9 +128,9 @@ class HSumGraph(nn.Module):
             # word -> sent
             sent_state = self.word2sent(graph, word_state, sent_state)
 
-        if self._hps.use_interest:
+        if self._hps.attention and self._hps.use_interest:
             sent_state2 = self.decoder(igword_state, word_state, sent_state)
-            sent_state = torch.cat((sent_state, sent_state2), dim=1)
+            sent_state = torch.mean(torch.stack(([sent_state, sent_state2])), dim=0)
 
         result = self.wh(sent_state)
 
@@ -137,13 +138,13 @@ class HSumGraph(nn.Module):
 
     def _init_sn_param(self):
         """
-        :return: 无
+        :return:
         """
         self.sent_pos_embed = nn.Embedding.from_pretrained(
             get_sinusoid_encoding_table(self._hps.doc_max_timesteps + 1, self.embed_size, padding_idx=0),
             freeze=True)
         self.cnn_proj = nn.Linear(self.embed_size, self._hps.n_feature_size)
-        self.lstm_hidden_state = self._hps.lstm_hidden_state    # 为 128
+        self.lstm_hidden_state = self._hps.lstm_hidden_state
         self.lstm = nn.LSTM(self.embed_size, self.lstm_hidden_state, num_layers=self._hps.lstm_layers,
                             dropout=self._hps.recurrent_dropout_prob, batch_first=True, bidirectional=self._hps.bidirectional)
         if self._hps.bidirectional:
