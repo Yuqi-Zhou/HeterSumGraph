@@ -130,8 +130,10 @@ class HSumGraph(nn.Module):
 
         if self._hps.attention and self._hps.use_interest:
             sent_state2 = self.decoder(igword_state, word_state, sent_state)
-            sent_state2 = list(sent_state2).append(sent_state)
-            sent_state = torch.mean(torch.stack(sent_state2), dim=0)
+            # sent_state2 = list(sent_state2)
+            # sent_state2.append(sent_state)
+            # sent_state = torch.mean(torch.stack(sent_state2), dim=0)
+            sent_state = sent_state2
 
         result = self.wh(sent_state)
 

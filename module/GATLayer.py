@@ -206,20 +206,22 @@ class MulHeadAttentionDecoder(nn.Module):
         # multi head attention
         # iw_attention, _ = self.IG_mulatt(winpute, iinpute, iinpute)               # [wnodes, 1, self.n_feature]
         # sw_attention, _ = self.HSG1_mulatt(winpute, sinpute, sinpute)             # [wnodes, 1, self.n_feature]
-        # s_attention, _  = self.HSG2_mulatt(sinpute, iw_attention, sw_attention) # [snodes, 1, self.n_feature]
-        w_attention, _  = self.HSG2_mulatt(sinpute, winpute, winpute)   # [snodes, 1, self.n_feature]
-        i_attention, _  = self.HSG1_mulatt(sinpute, iinpute, iinpute)   # [snodes, 1, self.n_feature]
-        s_attention, _  = self.HSG3_mulatt(sinpute, i_attention, w_attention) # [snodes, 1, self.n_feature]
+        # s_attention, _  = self.HSG2_mulatt(sinpute, iw_attention, sw_attention)   # [snodes, 1, self.n_feature]
+        w_attention, _  = self.HSG1_mulatt(sinpute, winpute, winpute)               # [snodes, 1, self.n_feature]
+        w_attention, _  = self.HSG2_mulatt(w_attention, winpute, winpute)           # [snodes, 1, self.n_feature]
+        w_attention, _  = self.HSG3_mulatt(w_attention, winpute, winpute)           # [snodes, 1, self.n_feature]
+        # i_attention, _  = self.HSG1_mulatt(sinpute, iinpute, iinpute)             # [snodes, 1, self.n_feature]
+        # s_attention, _  = self.HSG3_mulatt(sinpute, i_attention, w_attention)     # [snodes, 1, self.n_feature]
         # FFN + add + normalization
         # outputes = self.ffn(s_attention)
 
         outputes1 = self.ffn(w_attention)
         outputes1 = outputes1.squeeze(1)     # [snodes, self.n_feature]
 
-        outputes2 = self.ffn(i_attention)
-        outputes2 = outputes2.squeeze(1)     # [snodes, self.n_feature]
+        # outputes2 = self.ffn(i_attention)
+        # outputes2 = outputes2.squeeze(1)     # [snodes, self.n_feature]
 
-        outputes3 = self.ffn(s_attention)
-        outputes3 = outputes3.squeeze(1)     # [snodes, self.n_feature]
-        return outputes1, outputes2, outputes3
+        # outputes3 = self.ffn(s_attention)
+        # outputes3 = outputes3.squeeze(1)     # [snodes, self.n_feature]
+        return outputes1
 
