@@ -196,6 +196,8 @@ class MulHeadAttentionDecoder(nn.Module):
         self.HSG1_mulatt = torch.nn.MultiheadAttention(self.n_feature, num_heads=num_heads)
         self.HSG2_mulatt = torch.nn.MultiheadAttention(self.n_feature, num_heads=num_heads)
 
+        self.ffn1 = PositionwiseFeedForward(n_features, hps.ffn_inner_hidden_size)
+        self.ffn2 = PositionwiseFeedForward(n_features, hps.ffn_inner_hidden_size)
         self.ffn = PositionwiseFeedForward(n_features, hps.ffn_inner_hidden_size)
 
     def forward(self,iinpute, winpute, sinpute):
@@ -204,10 +206,12 @@ class MulHeadAttentionDecoder(nn.Module):
         sinpute = sinpute.unsqueeze(1)                   # [snodes, 1, self.n_feature]
 
         # multi head attention
-        # iw_attention, _ = self.IG_mulatt(winpute, iinpute, iinpute)               # [wnodes, 1, self.n_feature]
-        # sw_attention, _ = self.HSG1_mulatt(winpute, sinpute, sinpute)             # [wnodes, 1, self.n_feature]
-        # s_attention, _  = self.HSG2_mulatt(sinpute, iw_attention, sw_attention) # [snodes, 1, self.n_feature]
-        s_attention, _  = self.HSG2_mulatt(sinpute, winpute, winpute)   # [snodes, 1, self.n_feature]
+        iw_attention, _ = self.IG_mulatt(winpute, iinpute, iinpute)               # [wnodes, 1, self.n_feature]
+        iw_attention = self.ffn1(iw_attention)
+        sw_attention, _ = self.HSG1_mulatt(winpute, sinpute, sinpute)             # [wnodes, 1, self.n_feature]
+        sw_attention = self.ffn2(sw_attention)
+        s_attention, _  = self.HSG2_mulatt(sinpute, iw_attention, sw_attention) # [snodes, 1, self.n_feature]
+        # s_attention, _  = self.HSG2_mulatt(sinpute, winpute, winpute)   # [snodes, 1, self.n_feature]
 
         # FFN + add + normalization
         # outputes = self.ffn(s_attention)
