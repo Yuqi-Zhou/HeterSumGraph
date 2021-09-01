@@ -192,7 +192,7 @@ class MulHeadAttentionDecoder(nn.Module):
         self.n_feature = hps.hidden_size
 
         self.wd2sd = torch.nn.Linear(hps.word_emb_dim, self.n_feature)
-        self.HSG3_mulatt = torch.nn.MultiheadAttention(self.n_feature, num_heads=num_heads)
+        self.IG_mulatt = torch.nn.MultiheadAttention(self.n_feature, num_heads=num_heads)
         self.HSG1_mulatt = torch.nn.MultiheadAttention(self.n_feature, num_heads=num_heads)
         self.HSG2_mulatt = torch.nn.MultiheadAttention(self.n_feature, num_heads=num_heads)
 
@@ -208,8 +208,8 @@ class MulHeadAttentionDecoder(nn.Module):
         # sw_attention, _ = self.HSG1_mulatt(winpute, sinpute, sinpute)             # [wnodes, 1, self.n_feature]
         # s_attention, _  = self.HSG2_mulatt(sinpute, iw_attention, sw_attention)   # [snodes, 1, self.n_feature]
         w_attention, _  = self.HSG1_mulatt(sinpute, winpute, winpute)               # [snodes, 1, self.n_feature]
-        w_attention, _  = self.HSG2_mulatt(w_attention, winpute, winpute)           # [snodes, 1, self.n_feature]
-        w_attention, _  = self.HSG3_mulatt(w_attention, winpute, winpute)           # [snodes, 1, self.n_feature]
+        # w_attention, _  = self.HSG2_mulatt(w_attention, winpute, winpute)           # [snodes, 1, self.n_feature]
+        # w_attention, _  = self.HSG3_mulatt(w_attention, winpute, winpute)           # [snodes, 1, self.n_feature]
         # i_attention, _  = self.HSG1_mulatt(sinpute, iinpute, iinpute)             # [snodes, 1, self.n_feature]
         # s_attention, _  = self.HSG3_mulatt(sinpute, i_attention, w_attention)     # [snodes, 1, self.n_feature]
         # FFN + add + normalization
