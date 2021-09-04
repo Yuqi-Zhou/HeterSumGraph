@@ -89,7 +89,8 @@ class HSumGraph(nn.Module):
         self.n_feature = hps.hidden_size
 
         # multi-head-attention
-        self.decoder = MulHeadAttentionDecoder(self._hps, self.n_feature)
+        if self._hps.attention and self._hps.use_interest:
+            self.decoder = MulHeadAttentionDecoder(self._hps, self.n_feature)
 
         # sentence selector
         self.wh = nn.Linear(self.n_feature, 2)  # self.wh = nn.Linear(64, 2)
@@ -119,8 +120,9 @@ class HSumGraph(nn.Module):
 
             # igword -> word
             word_state = self.igword2word(graph, word_state, igword_state)
-
-        sent_state = self.word2sent(graph, word_state, sent_feature)
+            
+        if not self._hps.update2:
+            sent_state = self.word2sent(graph, word_state, sent_feature)
 
         for i in range(self._n_iter):
             # sent -> word
@@ -130,10 +132,8 @@ class HSumGraph(nn.Module):
 
         if self._hps.attention and self._hps.use_interest:
             sent_state2 = self.decoder(igword_state, word_state, sent_state)
-            # sent_state2 = list(sent_state2)
-            # sent_state2.append(sent_state)
-            # sent_state = torch.mean(torch.stack(sent_state2), dim=0)
-            sent_state = sent_state2
+            sent_state = torch.mean(torch.stack([sent_state2, sent_state]), dim=0)
+            # sent_state = sent_state2
 
         result = self.wh(sent_state)
 
