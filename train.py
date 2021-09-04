@@ -250,7 +250,7 @@ def run_eval(model, loader, valset, hps, best_loss, best_F, non_descent_cnt, sav
         non_descent_cnt += 1
 
     if best_F is None or best_F < F:
-        bestmodel_save_path = os.path.join(eval_dir, 'bestFmodel')
+        bestmodel_save_path = os.path.join(eval_dir, 'bestmodel')
         if best_F is not None:
             logger.info('[INFO] Found new best model with %.6f F. The original F is %.6f, Saving to %s', float(F),
                           float(best_F), bestmodel_save_path)
@@ -278,12 +278,13 @@ def main():
     parser.add_argument('--interest_dir', type=str, default='./aa_interest/simplified_cles_interest', help='The Interest Graph Data')
     parser.add_argument('--pyrouge_temp_dir', type=str, default='./HSG+cles+ig/bb_pyrouge_temp', help='The file to calculate score')
     parser.add_argument('--language', type=str, default='chinese', help='The chinese stopwords file')
+    parser.add_argument('--updata2', action='store_true', default=False, help='choose update2')
 
     # Attention
     parser.add_argument('--attention', action='store_true', default=False, help='whether to use attention')
 
     # numworkers
-    parser.add_argument('--num_workers', type=int, default=1, help='num of dataloader. [default: 1]')
+    parser.add_argument('--num_workers', type=int, default=32, help='num of dataloader. [default: 1]')
 
     # Important settings
     parser.add_argument('--model', type=str, default='HSG', help='model structure[HSG|HDSG]')
@@ -373,6 +374,8 @@ def main():
         model = HSumGraph(hps, embed)
         logger.info('[MODEL] HeterSumGraph')
         dataset = LoadHiExampleSet(os.path.join(args.dgl_dir, "train"))
+        # dataset = ExampleSet(DATA_FILE, vocab, hps.doc_max_timesteps, hps.sent_max_len, FILTER_WORD,
+        #                            train_w2s_path, args.use_interest, train_interest_path, hps.language)
         train_loader = torch.utils.data.DataLoader(dataset, batch_size=hps.batch_size, shuffle=True,
                                                     num_workers=hps.num_workers, collate_fn=graph_collate_fn)
         del dataset
