@@ -154,6 +154,7 @@ class ExampleSet(torch.utils.data.Dataset):
         self.doc_max_timesteps = doc_max_timesteps
         self.use_interest = use_interest
         self.interest_list = []
+        self.used_igwords = []
 
 
         logger.info("[INFO] Start reading %s", self.__class__.__name__)
@@ -203,7 +204,7 @@ class ExampleSet(torch.utils.data.Dataset):
         self.w2s_tfidf = readJson(w2s_path)
 
         if use_interest:
-            logger.info("[INFO] Loading word2sent TFIDF file from %s!" % interest_path)
+            logger.info("[INFO] Loading ig2word TFIDF file from %s!" % interest_path)
             with jsonlines.open(interest_path, 'r') as f_interest:
                 for line in f_interest:
                     self.interest_list.append(line)
@@ -277,6 +278,7 @@ class ExampleSet(torch.utils.data.Dataset):
         igwid2nid = {}
         ignid2wid = {}
         if self.use_interest:
+            ignodes = []
             ignid = w_nodes + N
             for ii in ['s_text', 'd_text']:
                 for a_igedge_list in a_interest_dict[ii]:
@@ -288,9 +290,11 @@ class ExampleSet(torch.utils.data.Dataset):
                     a_wid = self.vocab.word2id(a_word)
                     if (a_wid in wid2nid.keys()) and (a_igwid not in self.filterids) and (
                             a_igwid not in igwid2nid.keys()) and (a_igwid not in wid2nid.keys()):
+                        ignodes.append(a_word)
                         igwid2nid[a_igwid] = ignid
                         ignid2wid[ignid] = a_igwid
                         ignid += 1
+            self.used_igwords.append(ignodes)
 
             ignode_num = len(ignid2wid)
             G.add_nodes(ignode_num)
